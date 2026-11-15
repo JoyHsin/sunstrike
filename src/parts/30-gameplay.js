@@ -1,3 +1,4 @@
+const _fw=new THREE.Vector3(),_ms=new THREE.Vector3(),_sp=new THREE.Vector3(),_rt=new THREE.Vector3(),_up=new THREE.Vector3();
 // ================= AGENTS =================
 const agents=[];let player=null;let now=0;let diff='normal';let startMoney=3000;
 const SHORT={rifle:'AR-7',smg:'MK-5',sniper:'LR-9',pistol:'P-12',knife:'匕首'};
@@ -119,7 +120,9 @@ function updatePlayer(dt){const p=player;if(!p.alive){p.deathT+=dt;return;}
     else{const am=p.ammo[p.cur];if(am.mag<=0){Snd.click();p.fireCD=0.25;if(am.reserve>0)startReload(p);}
       else{am.mag--;p.fireCD=w.rate;p.lastShot=now;p.shots++;vmKick=1;Snd.shot(w.snd);flashLight.position.copy(camera.position);flashLight.intensity=8;vmFlash.intensity=1.5;p.flashT=0.05;p.noisyT=now;
         const sp=playerSpread();const r=fireRay(p,p.yaw+p.recoilY,p.pitch+p.recoilP,sp,250);
-        const st=_tmp.set(0.14,-0.12,-0.75).applyQuaternion(camera.quaternion).add(camera.position);fxTracer(st,r.end);fxSmoke(st,null,'muzzle',1);
+        const st=_tmp.set(0.14,-0.12,-0.75).applyQuaternion(camera.quaternion).add(camera.position);fxTracer(st,r.end);
+        {const q=camera.quaternion;const fw=_fw.set(0,0,-1).applyQuaternion(q);fxMuzzleSmoke(_ms.copy(st),fw,w.snd==='sniper');
+         fxShell(_sp.set(0.1,-0.08,-0.32).applyQuaternion(q).add(camera.position),_rt.set(1,0,0).applyQuaternion(q),_up.set(0,1,0).applyQuaternion(q).addScaledVector(fw,-0.2),w.snd,p.vel);}
         if(r.victim){damage(r.victim,p,w,r.zone,r.t);fxParts(r.end,'blood',null,r.zone==='head'?10:6);hitMarker(r.zone==='head');Snd.hit(r.zone==='head');}
         else if(r.t<250){fxDecal(r.end,r.n);fxParts(r.end,'spark',r.n,3);}
         const rc=w.recoil*(1+Math.random()*0.25)*(p.shots<3?0.75:1);p.recoilP=Math.min(p.recoilP+rc,0.14);p.recoilY+=(Math.random()-0.5)*w.recoil*(p.shots>5?1.6:0.5);p.recoilY=clamp(p.recoilY,-0.06,0.06);
@@ -160,7 +163,9 @@ function botShoot(b){const ai=b.ai,D=DIFF[diff],w=WEAPONS[b.cur],am=b.ammo[b.cur
   am.mag--;b.fireCD=w.rate*(w.auto?1:rand(1.3,2.2));b.lastShot=now;
   const hs=Math.hypot(b.vel.x,b.vel.z);let sp=D.spread+(w.scope?0.001:w.spread)+(w.moveSpread||0)*clamp((hs-1.2)/5,0,1)*0.7+(w.auto?Math.min(ai.burst,8)*0.0015:0);
   const r=fireRay(b,ai.aimY,ai.aimP,sp,250);Snd.shot(w.snd,b.pos);b.model.flash.visible=true;b.flashT=0.05;
-  const m=b.model.muzzleWorld(_r);fxTracer(m,r.end);if(Math.random()<0.4)fxSmoke(m,null,'muzzle',1);
+  const m=b.model.muzzleWorld(_r);fxTracer(m,r.end);
+  if(m.distanceToSquared(camera.position)<900){const fw=_fw.set(-Math.sin(ai.aimY),0,-Math.cos(ai.aimY));fxMuzzleSmoke(_ms.copy(m),fw,w.snd==='sniper');
+    fxShell(_sp.copy(m).addScaledVector(fw,-0.45).add(_up.set(0,0.03,0)),_rt.set(Math.cos(ai.aimY),0,-Math.sin(ai.aimY)),_up.set(0,1,0),w.snd,b.vel);}
   if(r.victim){damage(r.victim,b,w,r.zone,r.t);if(!r.victim.isPlayer&&r.t>1.5)fxParts(r.end,'blood',null,5);}else if(r.t<250){fxDecal(r.end,r.n);fxParts(r.end,'spark',r.n,2);}
   ai.burst++;if(w.auto&&ai.burst>=D.burst+((Math.random()*3)|0)){ai.burst=0;ai.burstPause=D.pause*rand(0.7,1.4);}
   ai.errMag=Math.max(D.minErr,ai.errMag*0.85);ai.phi+=rand(-1.5,1.5);}

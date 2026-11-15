@@ -141,6 +141,9 @@ const rpMain=new RenderPass(scene,camera);composer.addPass(rpMain);
 const gtao=new GTAOPass(scene,camera,innerWidth,innerHeight);gtao.output=GTAOPass.OUTPUT.Default;gtao.blendIntensity=1.0;
 gtao.updateGtaoMaterial({radius:1.1,distanceExponent:1.3,thickness:1.5,scale:1.35,samples:12,distanceFallOff:1.0,screenSpaceRadius:false});
 gtao.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:6,rings:2,samples:12});composer.addPass(gtao);
+// transparent things (sprites, smoke, puddles, clouds, tracers) must not enter GTAO's depth/normal pre-pass
+{const hide=[];scene.traverse(o=>{if(o.isSprite||o.isLine||o.isPoints||(o.isMesh&&o.material&&!Array.isArray(o.material)&&o.material.transparent))hide.push(o);});
+  const orig=gtao.render.bind(gtao);gtao.render=function(...args){const vis=hide.map(o=>o.visible);for(const o of hide)o.visible=false;orig(...args);hide.forEach((o,i)=>o.visible=vis[i]);};}
 const rpVm=new RenderPass(vmScene,vmCam);rpVm.clear=false;rpVm.clearDepth=true;composer.addPass(rpVm);
 const bloom=new UnrealBloomPass(new THREE.Vector2(256,256),0.32,0.45,1.05);composer.addPass(bloom);
 composer.addPass(new OutputPass());
@@ -169,7 +172,7 @@ function frame(t){requestAnimationFrame(frame);renderer.info.reset();let dt=(t-l
 requestAnimationFrame(frame);
 
 // ================= TEST HOOKS =================
-window.GAME={texMs:TEXGEN_MS,scene,clouds:CLOUDS,gtao:gtao,grade:grade,camera,renderInfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),quality:q=>setQuality(q),
+window.GAME={texMs:TEXGEN_MS,SHELLS,DEBRIS,scene,clouds:CLOUDS,gtao:gtao,grade:grade,camera,renderInfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),quality:q=>setQuality(q),
   start(d,m){noLock=true;locked=true;Snd.init();$('menu').classList.add('hidden');$('hud').classList.remove('hidden');paused=false;startMatch(d||'normal',m||initialMoney);},
   step(sec,dtS){const dt=dtS||1/60;for(let t=0;t<sec;t+=dt)update(dt);},
   info(){return {state:round.state,num:round.num,score:round.score.slice(),t:round.t,alive:[aliveCount(0),aliveCount(1)],hp:player.hp,money:player.money,

@@ -22,6 +22,7 @@ const Snd={ctx:null,master:null,noise:null,
   hurt(){if(!this.ctx)return;const d=this.out(null,0.6);const t=this.ctx.currentTime;this.burst(d,t,0.12,'lowpass',500,1,0.8);this.tone(d,t,0.12,180,90,'sine',0.5);},
   step(pos,vol){if(!this.ctx)return;const d=this.out(pos,vol);if(!d)return;this.burst(d,this.ctx.currentTime,0.07,'lowpass',380+Math.random()*120,1,0.9);},
   jingle(win){if(!this.ctx)return;const d=this.out(null,0.35);const t=this.ctx.currentTime;(win?[523,659,784,1046]:[440,370,311,262]).forEach((f,i)=>this.tone(d,t+i*0.13,0.35,f,0,'triangle',0.35));},
+  tink(pos){if(!this.ctx)return;const d=this.out(pos,0.16);if(!d)return;const t=this.ctx.currentTime;const f=3800+Math.random()*1800;this.tone(d,t,0.07,f,f*0.97,'sine',0.35);this.tone(d,t+0.004,0.05,f*1.52,0,'sine',0.15);},
   beep(){if(!this.ctx)return;const d=this.out(null,0.3);this.tone(d,this.ctx.currentTime,0.12,880,0,'square',0.15);},
   buy(){if(!this.ctx)return;const d=this.out(null,0.3);const t=this.ctx.currentTime;this.tone(d,t,0.08,1200,0,'square',0.15);this.tone(d,t+0.08,0.1,1600,0,'square',0.15);}
 };

@@ -198,7 +198,7 @@ const FX={tracers:[],decals:[],sparks:[],smoke:[],di:0,si:0,ki:0,ti:0};
  const dm=STD({map:holeTex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,roughness:0.9});const dg=new THREE.PlaneGeometry(0.11,0.11);
  for(let i=0;i<140;i++){const m=new THREE.Mesh(dg,dm);m.visible=false;m.matrixAutoUpdate=false;scene.add(m);FX.decals.push(m);}
  for(let i=0;i<80;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:sparkTex,color:new THREE.Color(3,2.2,1.2),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false}));s.visible=false;scene.add(s);FX.sparks.push({s,v:new THREE.Vector3(),t:0,t0:1});}
- for(let i=0;i<60;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeTex,depthWrite:false,transparent:true,opacity:0}));s.visible=false;scene.add(s);FX.smoke.push({s,v:new THREE.Vector3(),t:0,t0:1,size:1,grow:1,a:0.5});}}
+ for(let i=0;i<110;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:smokeTex,depthWrite:false,transparent:true,opacity:0}));s.visible=false;scene.add(s);FX.smoke.push({s,v:new THREE.Vector3(),t:0,t0:1,size:1,grow:1,a:0.5});}}
 function fxTracer(a,b){const T=FX.tracers[FX.ti++%FX.tracers.length];const p=T.l.geometry.attributes.position.array;p[0]=a.x;p[1]=a.y;p[2]=a.z;p[3]=b.x;p[4]=b.y;p[5]=b.z;T.l.geometry.attributes.position.needsUpdate=true;T.l.visible=true;T.t=0.06;T.l.material.opacity=0.8;}
 const _q=new THREE.Quaternion(),_nz=new THREE.Vector3(0,0,1),_nv=new THREE.Vector3();
 function fxDecal(p,n){const d=FX.decals[FX.di++%FX.decals.length];_nv.set(n[0],n[1],n[2]);d.position.set(p.x+n[0]*0.006,p.y+n[1]*0.006,p.z+n[2]*0.006);d.quaternion.setFromUnitVectors(_nz,_nv);
@@ -207,9 +207,9 @@ function fxSmoke(p,n,kind,count){for(let i=0;i<count;i++){const P=FX.smoke[FX.ki
   const blood=kind==='blood';P.v.set(rand(-0.3,0.3)+(n?n[0]*0.8:0),rand(0.1,0.5)+(n?n[1]*0.5:0),rand(-0.3,0.3)+(n?n[2]*0.8:0));P.t0=P.t=blood?rand(0.25,0.4):rand(0.8,1.6);P.size=blood?0.18:rand(0.18,0.32);P.grow=blood?1.2:rand(0.6,1.1);
   P.a=blood?0.85:(kind==='muzzle'?0.25:0.45);P.s.material.color.set(blood?0x6a0808:(kind==='dust'?0xb8a990:0xcfcac2));P.s.material.rotation=Math.random()*TAU;P.s.visible=true;}}
 function fxSparks(p,n,count){for(let i=0;i<count;i++){const P=FX.sparks[FX.si++%FX.sparks.length];P.s.position.copy(p);P.v.set(rand(-2,2)+n[0]*3,rand(0,3)+n[1]*3,rand(-2,2)+n[2]*3);P.t0=P.t=rand(0.12,0.3);P.s.scale.setScalar(rand(0.025,0.05));P.s.visible=true;}}
-function fxParts(p,kind,n,count){if(kind==='spark'){fxSparks(p,n||[0,1,0],count+2);fxSmoke(p,n,'dust',1);}else if(kind==='blood')fxSmoke(p,n,'blood',Math.min(4,Math.ceil(count/2)));else fxSmoke(p,n,'dust',2);}
-function updateFX(dt){for(const T of FX.tracers)if(T.t>0){T.t-=dt;T.l.material.opacity=Math.max(0,T.t/0.06)*0.8;if(T.t<=0)T.l.visible=false;}
+function fxParts(p,kind,n,count){if(kind==='spark'){fxSparks(p,n||[0,1,0],count+2);if(n){fxDebris(p,n,count+3);fxImpactDust(p,n);}else fxSmoke(p,n,'dust',1);}else if(kind==='blood')fxSmoke(p,n,'blood',Math.min(4,Math.ceil(count/2)));else{fxSmoke(p,n,'dust',2);if(n)fxDebris(p,n,3);}}
+function updateFX(dt){updateFX2(dt);for(const T of FX.tracers)if(T.t>0){T.t-=dt;T.l.material.opacity=Math.max(0,T.t/0.06)*0.8;if(T.t<=0)T.l.visible=false;}
   for(const P of FX.sparks)if(P.t>0){P.t-=dt;P.v.y-=14*dt;P.s.position.addScaledVector(P.v,dt);if(P.t<=0||P.s.position.y<0)P.s.visible=false;}
   for(const P of FX.smoke)if(P.t>0){P.t-=dt;const k=1-P.t/P.t0;P.s.position.addScaledVector(P.v,dt);P.v.multiplyScalar(Math.exp(-dt*2));P.v.y+=dt*0.15;const sz=P.size*(1+k*P.grow*2.5);P.s.scale.set(sz,sz,1);
     P.s.material.opacity=P.a*Math.min(1,k*6)*(1-k);if(P.t<=0)P.s.visible=false;}}
-function clearFX(){FX.decals.forEach(d=>d.visible=false);FX.sparks.forEach(p=>{p.t=0;p.s.visible=false;});FX.smoke.forEach(p=>{p.t=0;p.s.visible=false;});FX.tracers.forEach(t=>{t.t=0;t.l.visible=false;});}
+function clearFX(){clearFX2();FX.decals.forEach(d=>d.visible=false);FX.sparks.forEach(p=>{p.t=0;p.s.visible=false;});FX.smoke.forEach(p=>{p.t=0;p.s.visible=false;});FX.tracers.forEach(t=>{t.t=0;t.l.visible=false;});}
