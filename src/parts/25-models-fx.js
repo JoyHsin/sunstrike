@@ -183,6 +183,11 @@ const vmRoot=new THREE.Group();vmScene.add(vmRoot);const VM={};
   VM.sniper=vmGun('sniper',1.22,0.33,0.15,g=>stdArms(g,0.0,-0.3,-0.04),[0.15,-0.145,-0.48]);
   {const pg=VM.pistol;const arms=pg.children.filter(c=>c.isGroup||c.geometry&&c.geometry.type==='CylinderGeometry');
    VM.pistol=vmGun('pistol',0.22,0.04,0.045,g=>{for(const c of arms)g.add(c);},[0.09,-0.1,-0.36]);}
+  for(const [k,tint] of [['he',null],['fb',0xc4c8cc],['smoke',0x5a6650]]){const g=new THREE.Group();const o=ASSETS.grenade.scene.clone(true);const h=new THREE.Group();h.add(o);h.updateMatrixWorld(true);
+    let b=new THREE.Box3().setFromObject(h);o.scale.multiplyScalar(0.11/(b.max.y-b.min.y));h.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(h);o.position.sub(b.getCenter(new THREE.Vector3()));
+    o.traverse(m=>{if(m.isMesh){m.material=m.material.clone();if(tint&&!/pin|ring|lever|metal/i.test(m.material.name))m.material.color.set(tint);}});h.position.set(0,0.0,-0.02);h.rotation.set(0.25,0.4,0);g.add(h);
+    gripHand(g,0,-0.06,0.02,0.6);sleeveArm(g,new THREE.Vector3(0.02,-0.1,0.06),new THREE.Vector3(0.15,-0.33,0.44),0.042);
+    g.userData.muzzle=new THREE.Vector3(0,0,-0.1);g.userData.pos=[0.13,-0.12,-0.34];VM[k]=g;}
   for(const k in VM){VM[k].visible=false;vmRoot.add(VM[k]);}
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.2),flashMat);fl.visible=false;vmRoot.add(fl);VM.flash=fl;})();
 

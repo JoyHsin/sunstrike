@@ -240,9 +240,10 @@ for(const w of wallRuns){if(w.c1-w.c0<4)continue;for(const dz of [1,-1]){let ok=
   for(let x=w.x0+0.6;x<w.x1-0.3;x+=2.2){const b=rbox(x-0.04,3.65,Math.min(z,z-dz*0.13)-0.0,x+0.04,3.85,Math.max(z,z-dz*0.13),0.01,1);worldUV(b,1,1,1);batch(M.darkSteel,b);}}}
 // props
 const AO=[];// footprints for contact-shadow strips
+const CRATE_INFO={};
 for(let r=0;r<MH;r++)for(let c=0;c<MW;c++){const k=MAP[r][c],x=cellX(c),z=cellZ(r);
   if(k==='x'){for(const dx of [-0.55,0.55]){colBox(x+dx-0.55,0,z-0.55,x+dx+0.55,1.1,z+0.55);bakeProp('crate',x+dx,0,z,(srand()-0.5)*0.0,{sx:1.1,sy:1.1,sz:1.1});}AO.push([x-1.1,z-0.55,x+1.1,z+0.55]);
-    if(srand()<0.6){const ox=x+(srand()<0.5?-0.55:0.55),oz=z+rand(-0.1,0.1);colBox(ox-0.33,1.1,oz-0.33,ox+0.33,1.76,oz+0.33);bakeProp('crateDark',ox,1.1,oz,0,{sx:0.66,sy:0.66,sz:0.66});}}
+    CRATE_INFO[r*MW+c]={x:x-0.55};if(srand()<0.6){const side=srand()<0.5?-0.55:0.55;CRATE_INFO[r*MW+c]={x:x-side};const ox=x+side,oz=z+rand(-0.1,0.1);colBox(ox-0.33,1.1,oz-0.33,ox+0.33,1.76,oz+0.33);bakeProp('crateDark',ox,1.1,oz,0,{sx:0.66,sy:0.66,sz:0.66});}}
   else if(k==='X'){const mat=[M.contBlue,M.contRed,M.contGreen][(c+r)%3];colBox(x-1.0,0,z-1.0,x+1.0,2.3,z+1.0);const g=rbox(x-1.0,0,z-1.0,x+1.0,2.3,z+1.0,0.06,3);worldUV(g,2,2.3,2,x-1,0,z-1);batch(mat,g);AO.push([x-1,z-1,x+1,z+1]);
     const bar=cyl(0.02,0.02,2.0,8,x+1.03,1.15,z-0.6,'z');}
   else if(k==='w'){colBox(x-CELL/2,0,z-0.32,x+CELL/2,1.15,z+0.32);AO.push([x-CELL/2,z-0.32,x+CELL/2,z+0.32]);bakeProp('sandbags',x,0,z,0,{sx:CELL+0.1,sy:1.15,sz:0.75});}

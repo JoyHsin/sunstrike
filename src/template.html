@@ -67,7 +67,7 @@ canvas#game{display:block;position:fixed;inset:0;width:100%;height:100%}
 #scoreboard .dead{opacity:.4}
 .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,16,26,.25),rgba(0,0,0,.7))}
 .card{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.card{width:720px;max-width:94vw;background:rgba(16,22,32,.78);border:1px solid #2e3d52;border-radius:16px;padding:28px 34px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.card{width:720px;max-width:94vw;max-height:96vh;overflow:auto;background:rgba(16,22,32,.78);border:1px solid #2e3d52;border-radius:16px;padding:28px 34px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .title{font-size:46px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,#7fb5ff,#ffb35c);-webkit-background-clip:text;background-clip:text;color:transparent}
 .tag{opacity:.7;margin:4px 0 18px}
 .row{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}
@@ -79,6 +79,10 @@ canvas#game{display:block;position:fixed;inset:0;width:100%;height:100%}
 .controls b{display:inline-block;min-width:92px;color:#ffd060}
 .note{font-size:12px;opacity:.55;margin-top:12px;line-height:1.6}
 input[type=range]{width:220px}
+#prog{position:fixed;left:50%;top:62%;transform:translateX(-50%);width:300px;text-align:center;font-size:14px;text-shadow:0 1px 3px #000}
+#prog .pbar{height:8px;background:rgba(0,0,0,.45);border-radius:4px;margin-top:6px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+#progfill{height:100%;width:0;background:linear-gradient(90deg,#ffb347,#ff6a3a)}
+#blind{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -101,6 +105,8 @@ input[type=range]{width:220px}
   <div id="bl"><div class="panel stat"><span class="lbl">生命</span><span class="val" id="hpval">100</span></div><div class="panel stat"><span class="lbl">护甲</span><span class="val" id="arval">0</span></div></div>
   <div id="slots"></div>
   <div id="br" class="panel"><div id="wname">手枪</div><div id="ammo">12 <small>/ 36</small></div><div id="reloadtip"></div></div>
+  <div id="prog" class="hidden"><div id="proglbl"></div><div class="pbar"><div id="progfill"></div></div></div>
+  <div id="blind"></div>
   <div id="buy" class="hidden"></div>
   <div id="scoreboard" class="hidden"></div>
 </div>
@@ -108,12 +114,14 @@ input[type=range]{width:220px}
 <div id="menu" class="overlay">
   <div class="card">
     <div class="title">烈日突击 SUNSTRIKE</div>
-    <div class="tag">原创网页版单机战术射击 · 5 v 5 人机对战 · 先赢 8 局获胜</div>
+    <div class="tag">原创网页版单机战术射击 · 5 v 5 爆破模式人机对战 · 先赢 8 局获胜</div>
     <div class="row"><span class="lbl">难度</span>
       <button class="btn diff" data-d="easy">简单</button><button class="btn diff sel" data-d="normal">普通</button><button class="btn diff" data-d="hard">困难</button></div>
     <div class="row"><span class="lbl">初始金钱</span>
       <button class="btn start-money" data-m="800">$800 (手枪局)</button><button class="btn start-money sel" data-m="3000">$3000 (步枪)</button><button class="btn start-money" data-m="8000">$8000 (富裕)</button><button class="btn start-money" data-m="16000">$16000 (满配)</button>
       <input type="number" id="custom-money" min="0" max="16000" step="100" placeholder="自定义金额" style="width:110px;background:#1c2738;border:1px solid #3b4d66;color:#7dff8a;padding:8px 10px;border-radius:8px;font-size:14px;font-family:inherit"></div>
+    <div class="row"><span class="lbl">阵营</span>
+      <button class="btn side sel" data-s="0">防守方（守住 A / B 包点）</button><button class="btn side" data-s="1">进攻方（安放炸弹）</button></div>
     <div class="row"><span class="lbl">鼠标灵敏度</span><input type="range" id="sens" min="0.3" max="3" step="0.05" value="1"><span id="sensv">1.00</span></div>
     <div class="row"><span class="lbl">画质</span>
       <button class="btn q" data-q="low">流畅（关闭后期）</button><button class="btn q sel" data-q="high">高清（抗锯齿 + 泛光）</button></div>
@@ -124,9 +132,10 @@ input[type=range]{width:220px}
       <div><b>空格</b>跳跃</div><div><b>Shift</b>静步（敌人听不到脚步）</div>
       <div><b>C / Ctrl</b>蹲下（更准）</div><div><b>R</b>换弹</div>
       <div><b>1 / 2 / 3</b>主武器 / 手枪 / 匕首</div><div><b>B</b>购买菜单（回合开始 20 秒内）</div>
-      <div><b>Tab</b>计分板</div><div><b>Esc</b>暂停</div>
+      <div><b>4</b>投掷物（右键轻抛）</div><div><b>E（按住）</b>安放 / 拆除炸弹</div>
+      <div><b>G</b>丢弃炸弹</div><div><b>Tab</b>计分板 · <b style="min-width:0">Esc</b> 暂停</div>
     </div>
-    <div class="note">你和 4 名队友（蓝色·防守方）对抗 5 名敌人（橙色·进攻方）。消灭对方全部队员即赢得回合；时间耗尽算防守方获胜。击杀和胜利可获得金钱，用于购买武器和护甲。爆头伤害×2.5（狙击×4）；被 AI 击中的伤害随难度降低（简单 50% · 普通 70% · 困难 90%）。Mac 上建议用 C 键蹲下（Ctrl+点击会被系统当作右键）。</div>
+    <div class="note">爆破模式 5 v 5：进攻方需把炸弹安放到 A 或 B 包点（按住 E 3 秒），40 秒后爆炸即获胜；防守方需阻止安放或在爆炸前拆除（按住 E 6 秒）。未安放时消灭全部敌人或时间耗尽也能决定胜负。可购买高爆手雷、闪光弹、烟雾弹（机器人也会使用）。击杀和胜利可获得金钱，用于购买武器和护甲。爆头伤害×2.5（狙击×4）；被 AI 击中的伤害随难度降低（简单 50% · 普通 70% · 困难 90%）。Mac 上建议用 C 键蹲下（Ctrl+点击会被系统当作右键）。</div>
   </div>
 </div>
 <div id="pause" class="overlay hidden">
