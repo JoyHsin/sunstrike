@@ -23,8 +23,9 @@ function fireRay(a,yaw,pitch,spread,range){const o=_o.set(a.pos.x,eyeY(a),a.pos.
     if(th<best&&th<=tb){best=th;victim=b;zone='head';}else if(tb<best){best=tb;victim=b;const hy=o.y+_d.y*tb-b.pos.y;zone=hy<0.8*(b.height/1.8)?'leg':'body';}}
   return {o:o.clone(),d:_d.clone(),t:best,victim,zone,n,end:o.clone().addScaledVector(_d,best),range};}
 function damage(v,att,w,zone,dist){if(!v.alive||v._god)return;let dmg=w.dmg*Math.pow(w.falloff||1,dist/10);
-  if(zone==='head')dmg*=4;else if(zone==='leg')dmg*=0.75;
+  if(zone==='head')dmg*=(w.headMult||2.5);else if(zone==='leg')dmg*=0.75;
   if(!w.melee&&v.armor>0&&zone!=='leg'&&(zone!=='head'||v.helmet)){const hp=dmg*w.pen;v.armor=Math.max(0,v.armor-(dmg-hp)*0.5);dmg=hp;}
+  if(v.isPlayer&&att&&!att.isPlayer)dmg*=DIFF[diff].taken;
   dmg=Math.round(dmg);v.hp-=dmg;v.lastAttacker=att;
   if(v.isPlayer){Snd.hurt();hud.flash=0.6;const ang=Math.atan2(att.pos.x-v.pos.x,att.pos.z-v.pos.z);hud.dmgAng=ang;hud.dmgT=1.2;}
   else{const ai=v.ai;ai.alertT=now;if(!ai.targetVisible){ai.lastSeen=att.pos.clone();ai.lastSeenT=now;ai.lookAt=att.pos.clone();}}
@@ -130,9 +131,9 @@ function updatePlayer(dt){const p=player;if(!p.alive){p.deathT+=dt;return;}
 let mouseDown2=false;
 
 // ================= BOTS =================
-const DIFF={easy:{react:0.85,turn:3.0,err:0.17,minErr:0.045,spread:0.04,head:0.08,burst:3,pause:0.6,fov:0.45,hear:10},
-  normal:{react:0.48,turn:5.5,err:0.1,minErr:0.02,spread:0.018,head:0.22,burst:5,pause:0.35,fov:0.3,hear:15},
-  hard:{react:0.25,turn:9,err:0.06,minErr:0.009,spread:0.008,head:0.42,burst:8,pause:0.2,fov:0.15,hear:20}};
+const DIFF={easy:{react:0.85,turn:3.0,err:0.17,minErr:0.045,spread:0.04,head:0.05,taken:0.5,burst:3,pause:0.6,fov:0.45,hear:10},
+  normal:{react:0.48,turn:5.5,err:0.1,minErr:0.02,spread:0.018,head:0.12,taken:0.7,burst:5,pause:0.35,fov:0.3,hear:15},
+  hard:{react:0.25,turn:9,err:0.06,minErr:0.009,spread:0.008,head:0.25,taken:0.9,burst:8,pause:0.2,fov:0.15,hear:20}};
 function nearestWalkable(c,r){if(walkable(c,r))return [c,r];for(let d=1;d<5;d++)for(let dz=-d;dz<=d;dz++)for(let dx=-d;dx<=d;dx++)if(walkable(c+dx,r+dz))return [c+dx,r+dz];return null;}
 function setPath(b,c,r){const ai=b.ai;const s=nearestWalkable(toCol(b.pos.x),toRow(b.pos.z)),e=nearestWalkable(c,r);if(!s||!e){ai.path=null;return false;}
   ai.path=astar(s[0],s[1],e[0],e[1]);ai.pi=0;ai.jit=[rand(-0.45,0.45),rand(-0.45,0.45)];return !!ai.path;}

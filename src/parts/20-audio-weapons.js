@@ -30,7 +30,7 @@ const Snd={ctx:null,master:null,noise:null,
 const WEAPONS={
   rifle:{id:'rifle',name:'突击步枪 AR-7',slot:1,dmg:34,rate:0.1,auto:true,mag:30,reserve:90,reload:2.4,spread:0.0035,moveSpread:0.075,recoil:0.0105,pen:0.78,mob:0.9,reward:300,price:2700,snd:'rifle',falloff:0.98},
   smg:{id:'smg',name:'冲锋枪 MK-5',slot:1,dmg:26,rate:0.075,auto:true,mag:30,reserve:120,reload:2.1,spread:0.007,moveSpread:0.025,recoil:0.0075,pen:0.6,mob:1.0,reward:600,price:1250,snd:'smg',falloff:0.86},
-  sniper:{id:'sniper',name:'狙击步枪 LR-9',slot:1,dmg:115,rate:1.45,auto:false,mag:5,reserve:20,reload:3.4,spread:0.07,scopeSpread:0.0006,moveSpread:0.16,recoil:0.045,pen:0.97,mob:0.82,reward:100,price:4750,snd:'sniper',falloff:0.99,scope:true},
+  sniper:{id:'sniper',name:'狙击步枪 LR-9',slot:1,dmg:115,headMult:4,rate:1.45,auto:false,mag:5,reserve:20,reload:3.4,spread:0.07,scopeSpread:0.0006,moveSpread:0.16,recoil:0.045,pen:0.97,mob:0.82,reward:100,price:4750,snd:'sniper',falloff:0.99,scope:true},
   pistol:{id:'pistol',name:'手枪 P-12',slot:2,dmg:30,rate:0.15,auto:false,mag:12,reserve:36,reload:2.1,spread:0.006,moveSpread:0.03,recoil:0.02,pen:0.5,mob:1.0,reward:300,price:0,snd:'pistol',falloff:0.85},
   knife:{id:'knife',name:'战术匕首',slot:3,dmg:55,rate:0.5,melee:true,range:2.1,mob:1.08,reward:1500}
 };
