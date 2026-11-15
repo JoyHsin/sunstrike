@@ -103,17 +103,34 @@ addEventListener('mouseup',e=>{if(e.button===0||e.button===2&&e.ctrlKey)mouseDow
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 // menu
 document.querySelectorAll('.diff').forEach(b=>b.onclick=()=>{document.querySelectorAll('.diff').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');diff=b.dataset.d;});
+let initialMoney=3000;
+document.querySelectorAll('.start-money').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.start-money').forEach(x=>x.classList.remove('sel'));
+  b.classList.add('sel');
+  initialMoney=+b.dataset.m;
+  const cm=$('custom-money');if(cm)cm.value='';
+});
+const customMoneyInput=$('custom-money');
+if(customMoneyInput){
+  customMoneyInput.oninput=e=>{
+    const v=parseInt(e.target.value,10);
+    if(!isNaN(v)&&v>=0){
+      document.querySelectorAll('.start-money').forEach(x=>x.classList.remove('sel'));
+      initialMoney=clamp(v,0,16000);
+    }
+  };
+}
 document.querySelectorAll('.q').forEach(b=>b.onclick=()=>{document.querySelectorAll('.q').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');setQuality(b.dataset.q);});
 function setQuality(q){quality=q;applySize();const ms=q==='low'?2048:4096;
   if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}}
 $('sens').oninput=e=>{sens=+e.target.value;$('sensv').textContent=sens.toFixed(2);};
-function beginGame(){Snd.init();Snd.resume();$('menu').classList.add('hidden');$('hud').classList.remove('hidden');paused=false;startMatch(diff);requestLock();}
+function beginGame(){Snd.init();Snd.resume();$('menu').classList.add('hidden');$('hud').classList.remove('hidden');paused=false;startMatch(diff,initialMoney);requestLock();}
 $('startbtn').onclick=beginGame;
 $('resumebtn').onclick=()=>{Snd.resume();requestLock();};
 function toMenu(){round.state='menu';paused=false;$('pause').classList.add('hidden');$('over').classList.add('hidden');$('hud').classList.add('hidden');$('menu').classList.remove('hidden');releaseLock();
   agents.forEach(a=>{if(a.model)a.model.root.visible=false;});}
 $('quitbtn').onclick=toMenu;$('menubtn').onclick=toMenu;
-$('againbtn').onclick=()=>{$('over').classList.add('hidden');startMatch(diff);requestLock();};
+$('againbtn').onclick=()=>{$('over').classList.add('hidden');startMatch(diff,initialMoney);requestLock();};
 agents.forEach(a=>{if(a.model)a.model.root.visible=false;});
 
 // ================= RENDER PIPELINE =================
@@ -141,7 +158,7 @@ requestAnimationFrame(frame);
 
 // ================= TEST HOOKS =================
 window.GAME={texMs:TEXGEN_MS,renderInfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),quality:q=>setQuality(q),
-  start(d){noLock=true;locked=true;Snd.init();$('menu').classList.add('hidden');$('hud').classList.remove('hidden');paused=false;startMatch(d||'normal');},
+  start(d,m){noLock=true;locked=true;Snd.init();$('menu').classList.add('hidden');$('hud').classList.remove('hidden');paused=false;startMatch(d||'normal',m||initialMoney);},
   step(sec,dtS){const dt=dtS||1/60;for(let t=0;t<sec;t+=dt)update(dt);},
   info(){return {state:round.state,num:round.num,score:round.score.slice(),t:round.t,alive:[aliveCount(0),aliveCount(1)],hp:player.hp,money:player.money,
     kills:agents.map(a=>a.name+':'+a.kills+'/'+a.deaths),pos:agents.map(a=>a.name+'@'+toCol(a.pos.x)+','+toRow(a.pos.z)+(a.alive?'':'x'))};},

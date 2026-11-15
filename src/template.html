@@ -111,6 +111,9 @@ input[type=range]{width:220px}
     <div class="tag">原创网页版单机战术射击 · 5 v 5 人机对战 · 先赢 8 局获胜</div>
     <div class="row"><span class="lbl">难度</span>
       <button class="btn diff" data-d="easy">简单</button><button class="btn diff sel" data-d="normal">普通</button><button class="btn diff" data-d="hard">困难</button></div>
+    <div class="row"><span class="lbl">初始金钱</span>
+      <button class="btn start-money" data-m="800">$800 (手枪局)</button><button class="btn start-money sel" data-m="3000">$3000 (步枪)</button><button class="btn start-money" data-m="8000">$8000 (富裕)</button><button class="btn start-money" data-m="16000">$16000 (满配)</button>
+      <input type="number" id="custom-money" min="0" max="16000" step="100" placeholder="自定义金额" style="width:110px;background:#1c2738;border:1px solid #3b4d66;color:#7dff8a;padding:8px 10px;border-radius:8px;font-size:14px;font-family:inherit"></div>
     <div class="row"><span class="lbl">鼠标灵敏度</span><input type="range" id="sens" min="0.3" max="3" step="0.05" value="1"><span id="sensv">1.00</span></div>
     <div class="row"><span class="lbl">画质</span>
       <button class="btn q" data-q="low">流畅（关闭后期）</button><button class="btn q sel" data-q="high">高清（抗锯齿 + 泛光）</button></div>

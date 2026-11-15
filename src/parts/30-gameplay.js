@@ -1,5 +1,5 @@
 // ================= AGENTS =================
-const agents=[];let player=null;let now=0;let diff='normal';
+const agents=[];let player=null;let now=0;let diff='normal';let startMoney=3000;
 const SHORT={rifle:'AR-7',smg:'MK-5',sniper:'LR-9',pistol:'P-12',knife:'匕首'};
 const NAMES=[['小林','阿杰','老王','大刘'],['毒蛇','猎鹰','铁锤','幽灵','刀锋']];
 function makeAgent(team,name,isPlayer){const a={team,name,isPlayer,pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,hp:100,armor:0,helmet:false,alive:true,radius:0.32,height:1.8,onGround:true,
@@ -63,7 +63,7 @@ function spawnAll(){const used=[[],[]];const free=SPAWN.map(s=>s.slice().sort(()
         aimY:a.yaw,aimP:0,burst:0,burstPause:0,strafe:1,strafeT:0,stuckT:0,lastPos:a.pos.clone(),headAim:false,jit:[0,0],scan:0});
       a.model.root.visible=true;a.model.root.rotation.set(0,a.yaw,0);a.model.root.position.copy(a.pos);}}
   planRound();}
-function startMatch(d){diff=d||diff;round.score=[0,0];round.num=0;round.over=false;for(const a of agents){a.kills=0;a.deaths=0;a.alive=false;}player.money=800;startRound();}
+function startMatch(d,m){diff=d||diff;if(m!==undefined)startMoney=m;round.score=[0,0];round.num=0;round.over=false;for(const a of agents){a.kills=0;a.deaths=0;a.alive=false;}player.money=startMoney;startRound();}
 function startRound(){round.num++;clearFX();spawnAll();round.state='freeze';round.t=FREEZE;round.liveT=0;round.winner=-1;scoped=false;buyOpen=false;
   banner(`第 ${round.num} 回合`,'准备… 按 B 购买装备',2.5);Snd.beep();$('over').classList.add('hidden');}
 function endRound(w,reason){round.state='end';round.t=5;round.winner=w;round.score[w]++;const win=w===player.team;
