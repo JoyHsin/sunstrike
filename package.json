@@ -1,0 +1,9 @@
+{
+  "name": "sunstrike",
+  "version": "2.0.0",
+  "private": true,
+  "description": "烈日突击 SUNSTRIKE — 原创网页版单机战术射击游戏",
+  "license": "MIT",
+  "scripts": { "build": "node src/build.js" },
+  "devDependencies": { "three": "0.170.0", "esbuild": "0.24.0" }
+}

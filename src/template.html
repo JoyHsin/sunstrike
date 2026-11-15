@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>烈日突击 · SUNSTRIKE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:#fff;user-select:none}
+canvas#game{display:block;position:fixed;inset:0;width:100%;height:100%}
+.hidden{display:none!important}
+#hud{position:fixed;inset:0;pointer-events:none}
+.panel{background:rgba(10,14,20,.55);border-radius:8px;padding:6px 12px;text-shadow:0 1px 2px #000}
+#topbar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px}
+#topbar .team{font-weight:700;font-size:15px;padding:6px 12px;border-radius:6px;min-width:110px;text-align:center}
+#topbar .ct{background:rgba(40,90,170,.75)} #topbar .t{background:rgba(180,110,40,.75)}
+#timer{font-size:26px;font-weight:800;min-width:90px;text-align:center;font-variant-numeric:tabular-nums}
+#timer.warn{color:#ff6060}
+#alive{position:absolute;top:58px;left:50%;transform:translateX(-50%);font-size:13px;opacity:.9}
+#bl{position:absolute;left:16px;bottom:16px;display:flex;gap:10px;align-items:flex-end}
+.stat{display:flex;align-items:baseline;gap:6px}
+.stat .lbl{font-size:13px;opacity:.75}
+.stat .val{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+#hpval.low{color:#ff5050}
+#money{position:absolute;left:16px;bottom:84px;font-size:22px;font-weight:700;color:#7dff8a}
+#br{position:absolute;right:16px;bottom:16px;text-align:right}
+#wname{font-size:14px;opacity:.85}
+#ammo{font-size:38px;font-weight:800;font-variant-numeric:tabular-nums}
+#ammo small{font-size:20px;opacity:.7}
+#reloadtip{font-size:13px;color:#ffd060}
+#slots{position:absolute;right:16px;bottom:110px;font-size:13px;text-align:right;line-height:1.7}
+#slots div{opacity:.45}#slots div.on{opacity:1;color:#ffd060}
+#crosshair{position:absolute;left:50%;top:50%;width:0;height:0}
+#crosshair i{position:absolute;background:#5f5;box-shadow:0 0 1px #000,0 0 2px #000}
+#crosshair .h{width:8px;height:2px;top:-1px}#crosshair .v{width:2px;height:8px;left:-1px}
+#crosshair .dot{width:2px;height:2px;left:-1px;top:-1px}
+#hitmark{position:absolute;left:50%;top:50%;width:26px;height:26px;transform:translate(-50%,-50%);opacity:0}
+#hitmark:before,#hitmark:after{content:"";position:absolute;left:12px;top:-2px;width:2px;height:30px;background:#fff;transform:rotate(45deg);box-shadow:0 0 2px #000}
+#hitmark:after{transform:rotate(-45deg)}
+#hitmark.hs:before,#hitmark.hs:after{background:#ff3b3b}
+#killfeed{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.kf{background:rgba(0,0,0,.55);padding:4px 10px;border-radius:5px;font-size:14px;white-space:nowrap}
+.kf.me{border:1px solid #e33;background:rgba(80,0,0,.55)}
+.kf .c0{color:#7fb5ff}.kf .c1{color:#ffb35c}.kf .w{opacity:.8;margin:0 6px}.kf .hs{color:#ff5a5a;margin-right:6px}
+#center{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%);text-align:center}
+#banner{font-size:40px;font-weight:900;text-shadow:0 2px 8px #000}
+#subbanner{font-size:18px;margin-top:6px;text-shadow:0 2px 6px #000}
+#msg{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);font-size:16px;text-shadow:0 1px 3px #000;color:#ffe08a}
+#dmgflash{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(200,0,0,.55) 100%);opacity:0}
+#dmgdir{position:absolute;left:50%;top:50%;width:0;height:0}
+#dmgdir i{position:absolute;left:-40px;top:-170px;width:80px;height:18px;border-radius:50%/100% 100% 0 0;background:rgba(255,40,40,.85);opacity:0}
+#scope{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(0,0,0,0) 0,rgba(0,0,0,0) 34vh,#000 34.3vh);}
+#scope:before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#000}
+#scope:after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#000}
+#minimap{position:absolute;left:12px;top:12px;width:190px;height:150px;border-radius:8px;background:rgba(0,0,0,.35)}
+#spect{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);font-size:16px}
+#fps{position:absolute;left:12px;top:168px;font-size:11px;opacity:.6}
+#buy{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:520px;background:rgba(12,16,24,.92);border:1px solid #3a4a60;border-radius:12px;padding:18px 22px;pointer-events:none}
+#buy h2{font-size:20px;margin-bottom:4px}#buy .sub{font-size:13px;opacity:.7;margin-bottom:12px}
+.bi{display:flex;justify-content:space-between;padding:8px 10px;border-radius:6px;margin:4px 0;background:rgba(255,255,255,.05);font-size:15px}
+.bi .k{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:4px;background:#2c3a50;margin-right:10px;font-weight:700}
+.bi.no{opacity:.4}.bi .p{color:#7dff8a}
+#scoreboard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;background:rgba(10,14,20,.9);border-radius:12px;padding:16px 20px}
+#scoreboard table{width:100%;border-collapse:collapse;font-size:14px}
+#scoreboard td,#scoreboard th{padding:5px 8px;text-align:left}#scoreboard th{opacity:.6;font-weight:500}
+#scoreboard .dead{opacity:.4}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,16,26,.25),rgba(0,0,0,.7))}
+.card{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.card{width:720px;max-width:94vw;background:rgba(16,22,32,.78);border:1px solid #2e3d52;border-radius:16px;padding:28px 34px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.title{font-size:46px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,#7fb5ff,#ffb35c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{opacity:.7;margin:4px 0 18px}
+.row{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}
+.row .lbl{width:90px;opacity:.8}
+.btn{pointer-events:auto;cursor:pointer;border:1px solid #3b4d66;background:#1c2738;color:#fff;padding:9px 18px;border-radius:8px;font-size:15px;font-family:inherit}
+.btn:hover{background:#26354b}.btn.sel{background:#2f6fd0;border-color:#5b95ec}
+.btn.big{font-size:20px;padding:12px 40px;background:linear-gradient(90deg,#2f6fd0,#c9782c);border:none;font-weight:800}
+.controls{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 24px;font-size:14px;margin-top:16px;background:rgba(255,255,255,.04);padding:12px 16px;border-radius:10px}
+.controls b{display:inline-block;min-width:92px;color:#ffd060}
+.note{font-size:12px;opacity:.55;margin-top:12px;line-height:1.6}
+input[type=range]{width:220px}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud" class="hidden">
+  <canvas id="minimap" width="190" height="150"></canvas>
+  <div id="fps"></div>
+  <div id="topbar"><div class="team ct">防守方 <span id="sct">0</span></div><div id="timer" class="panel">1:55</div><div class="team t"><span id="st">0</span> 进攻方</div></div>
+  <div id="alive"></div>
+  <div id="killfeed"></div>
+  <div id="crosshair"><i class="h" id="chl"></i><i class="h" id="chr"></i><i class="v" id="cht"></i><i class="v" id="chb"></i><i class="dot"></i></div>
+  <div id="hitmark"></div>
+  <div id="dmgflash"></div>
+  <div id="dmgdir"><i id="dmgarc"></i></div>
+  <div id="scope" class="hidden"></div>
+  <div id="center"><div id="banner"></div><div id="subbanner"></div></div>
+  <div id="msg"></div>
+  <div id="spect" class="panel hidden"></div>
+  <div id="money">$800</div>
+  <div id="bl"><div class="panel stat"><span class="lbl">生命</span><span class="val" id="hpval">100</span></div><div class="panel stat"><span class="lbl">护甲</span><span class="val" id="arval">0</span></div></div>
+  <div id="slots"></div>
+  <div id="br" class="panel"><div id="wname">手枪</div><div id="ammo">12 <small>/ 36</small></div><div id="reloadtip"></div></div>
+  <div id="buy" class="hidden"></div>
+  <div id="scoreboard" class="hidden"></div>
+</div>
+<div id="loading" class="overlay" style="z-index:5"><div class="title" style="font-size:32px">正在生成材质…</div></div>
+<div id="menu" class="overlay">
+  <div class="card">
+    <div class="title">烈日突击 SUNSTRIKE</div>
+    <div class="tag">原创网页版单机战术射击 · 5 v 5 人机对战 · 先赢 8 局获胜</div>
+    <div class="row"><span class="lbl">难度</span>
+      <button class="btn diff" data-d="easy">简单</button><button class="btn diff sel" data-d="normal">普通</button><button class="btn diff" data-d="hard">困难</button></div>
+    <div class="row"><span class="lbl">鼠标灵敏度</span><input type="range" id="sens" min="0.3" max="3" step="0.05" value="1"><span id="sensv">1.00</span></div>
+    <div class="row"><span class="lbl">画质</span>
+      <button class="btn q" data-q="low">流畅（关闭后期）</button><button class="btn q sel" data-q="high">高清（抗锯齿 + 泛光）</button></div>
+    <div class="row" style="margin-top:18px"><button class="btn big" id="startbtn">开始游戏</button></div>
+    <div class="controls">
+      <div><b>W A S D</b>移动</div><div><b>鼠标</b>瞄准</div>
+      <div><b>左键</b>开火</div><div><b>右键</b>狙击枪开镜</div>
+      <div><b>空格</b>跳跃</div><div><b>Shift</b>静步（敌人听不到脚步）</div>
+      <div><b>C / Ctrl</b>蹲下（更准）</div><div><b>R</b>换弹</div>
+      <div><b>1 / 2 / 3</b>主武器 / 手枪 / 匕首</div><div><b>B</b>购买菜单（回合开始 20 秒内）</div>
+      <div><b>Tab</b>计分板</div><div><b>Esc</b>暂停</div>
+    </div>
+    <div class="note">你和 4 名队友（蓝色·防守方）对抗 5 名敌人（橙色·进攻方）。消灭对方全部队员即赢得回合；时间耗尽算防守方获胜。击杀和胜利可获得金钱，用于购买武器和护甲。爆头伤害×4。Mac 上建议用 C 键蹲下（Ctrl+点击会被系统当作右键）。</div>
+  </div>
+</div>
+<div id="pause" class="overlay hidden">
+  <div class="card" style="width:420px;text-align:center">
+    <div class="title" style="font-size:34px">已暂停</div>
+    <div class="row" style="justify-content:center;margin-top:20px"><button class="btn big" id="resumebtn">继续游戏</button></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="quitbtn">返回主菜单</button></div>
+    <div class="note" id="pausenote">点击“继续游戏”重新锁定鼠标</div>
+  </div>
+</div>
+<div id="over" class="overlay hidden">
+  <div class="card" style="width:460px;text-align:center">
+    <div class="title" id="overtitle" style="font-size:40px">胜利</div>
+    <div class="tag" id="oversub"></div>
+    <div class="row" style="justify-content:center"><button class="btn big" id="againbtn">再来一局</button></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="menubtn">返回主菜单</button></div>
+  </div>
+</div>
+<script>/*GAME*/</script>
+</body>
+</html>
