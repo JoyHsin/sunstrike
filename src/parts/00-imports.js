@@ -25,3 +25,5 @@ import glbContRed2 from '../assets/models/container_red2.glb';
 import glbContGreen from '../assets/models/container_green.glb';
 import glbSandbags from '../assets/models/sandbags.glb';
 import glbPallet from '../assets/models/pallet.glb';
+import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';

@@ -137,14 +137,26 @@ agents.forEach(a=>{if(a.model)a.model.root.visible=false;});
 let quality='high';
 const composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType,samples:4}));
 const rpMain=new RenderPass(scene,camera);composer.addPass(rpMain);
+// GTAO ambient occlusion on the world (not on the viewmodel) — high quality only
+const gtao=new GTAOPass(scene,camera,innerWidth,innerHeight);gtao.output=GTAOPass.OUTPUT.Default;gtao.blendIntensity=1.0;
+gtao.updateGtaoMaterial({radius:1.1,distanceExponent:1.3,thickness:1.5,scale:1.35,samples:12,distanceFallOff:1.0,screenSpaceRadius:false});
+gtao.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:6,rings:2,samples:12});composer.addPass(gtao);
 const rpVm=new RenderPass(vmScene,vmCam);rpVm.clear=false;rpVm.clearDepth=true;composer.addPass(rpVm);
 const bloom=new UnrealBloomPass(new THREE.Vector2(256,256),0.32,0.45,1.05);composer.addPass(bloom);
 composer.addPass(new OutputPass());
+// colour grading (after tone mapping, in display space): contrast, saturation, split toning, vignette
+const GradeShader={uniforms:{tDiffuse:{value:null},contrast:{value:1.07},saturation:{value:1.1},shadowTint:{value:new THREE.Vector3(0.96,1.0,1.06)},highTint:{value:new THREE.Vector3(1.04,1.0,0.94)},vignette:{value:0.28}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float contrast,saturation,vignette;uniform vec3 shadowTint,highTint;varying vec2 vUv;
+  void main(){vec4 c=texture2D(tDiffuse,vUv);vec3 col=c.rgb;float l=dot(col,vec3(0.2126,0.7152,0.0722));
+    col=mix(vec3(l),col,saturation);col=(col-0.5)*contrast+0.5;col*=mix(shadowTint,highTint,smoothstep(0.15,0.85,l));
+    vec2 q=vUv-0.5;col*=1.0-vignette*smoothstep(0.25,0.85,dot(q,q)*2.2);gl_FragColor=vec4(clamp(col,0.0,1.0),c.a);}`};
+const grade=new ShaderPass(GradeShader);composer.addPass(grade);
 function applySize(){const dpr=quality==='low'?1:Math.min(window.devicePixelRatio||1,2,2880/Math.max(1,innerWidth));renderer.setPixelRatio(dpr);renderer.setSize(innerWidth,innerHeight,false);
   composer.setPixelRatio(dpr);composer.setSize(innerWidth,innerHeight);camera.aspect=vmCam.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();vmCam.updateProjectionMatrix();}
 addEventListener('resize',applySize);applySize();
 // ================= MAIN LOOP =================
-function update(dt){now+=dt;
+function update(dt){now+=dt;CLOUDS.material.uniforms.time.value+=dt;
   if(round.state!=='menu'&&round.state!=='over'){updatePlayer(dt);for(const a of agents)if(!a.isPlayer)updateBot(a,dt);separate();updateRound(dt);}
   updateFX(dt);}
 let last=performance.now();
@@ -157,7 +169,7 @@ function frame(t){requestAnimationFrame(frame);renderer.info.reset();let dt=(t-l
 requestAnimationFrame(frame);
 
 // ================= TEST HOOKS =================
-window.GAME={texMs:TEXGEN_MS,renderInfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),quality:q=>setQuality(q),
+window.GAME={texMs:TEXGEN_MS,scene,clouds:CLOUDS,gtao:gtao,grade:grade,camera,renderInfo:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),quality:q=>setQuality(q),
   start(d,m){noLock=true;locked=true;Snd.init();$('menu').classList.add('hidden');$('hud').classList.remove('hidden');paused=false;startMatch(d||'normal',m||initialMoney);},
   step(sec,dtS){const dt=dtS||1/60;for(let t=0;t<sec;t+=dt)update(dt);},
   info(){return {state:round.state,num:round.num,score:round.score.slice(),t:round.t,alive:[aliveCount(0),aliveCount(1)],hp:player.hp,money:player.money,
