@@ -53,7 +53,7 @@ function ikArm(parent,S,T,pole,L1,L2,mUp,mFo,mHand,mPad){const d=Math.min(T.clon
   const ua=new THREE.Mesh(CGEO.uarm,mUp);ua.position.copy(S);ua.quaternion.setFromUnitVectors(down,E.clone().sub(S).normalize());ua.scale.y=L1/0.3;ua.castShadow=true;parent.add(ua);
   const fa=new THREE.Mesh(CGEO.farm,mFo);fa.position.copy(E);fa.quaternion.setFromUnitVectors(down,T2.clone().sub(E).normalize());fa.scale.y=L2/0.3;fa.castShadow=true;parent.add(fa);
   const hd=new THREE.Mesh(CGEO.hand,mHand);hd.position.copy(T2);hd.castShadow=true;parent.add(hd);const sp=new THREE.Mesh(CGEO.shoulder,mPad);sp.position.copy(S).add(new THREE.Vector3(0,0.02,0));sp.castShadow=true;parent.add(sp);}
-function makeModel(team){const T=TEAMMAT[team];const g=new THREE.Group();const add=(geo,mat,x,y,z,parent,sx)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(parent||g).add(m);return m;};
+function makeModelProc(team){const T=TEAMMAT[team];const g=new THREE.Group();const add=(geo,mat,x,y,z,parent,sx)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(parent||g).add(m);return m;};
   const legs=[];for(const s of [-1,1]){const hip=new THREE.Group();hip.position.set(s*0.1,0.92,0);g.add(hip);add(CGEO.thigh,T.cloth,0,0,0,hip);
     const knee=new THREE.Group();knee.position.y=-0.42;hip.add(knee);add(CGEO.knee,T.pad,0,0,-0.055,knee);add(CGEO.shin,T.cloth,0,0,0,knee);add(CGEO.boot,GEAR.leather,0,-0.43,-0.05,knee);legs.push(hip,knee);}
   const upper=new THREE.Group();upper.position.y=0.92;g.add(upper);
@@ -172,6 +172,17 @@ const vmRoot=new THREE.Group();vmScene.add(vmRoot);const VM={};
    cylZ(0.017,0.012,0.012,16,metal,g,0,0.004,0.124);}
   gripHand(g,0,-0.0,0.06,1.4);sleeveArm(g,new THREE.Vector3(0.02,-0.04,0.1),new THREE.Vector3(0.14,-0.3,0.42),0.042);
   g.userData.muzzle=new THREE.Vector3(0,0,-0.2);g.userData.pos=[0.12,-0.12,-0.34];VM.knife=g;
+  // glTF weapons (Quaternius, CC0) replace the procedural gun bodies; procedural gloves/sleeves kept
+  function vmGun(key,len,rearZ,topY,armsFn,pos){const o=ASSETS[key].scene.clone(true);const h=new THREE.Group();h.add(o);o.rotation.y=Math.PI/2;h.updateMatrixWorld(true);
+    let b=new THREE.Box3().setFromObject(h);const s=len/(b.max.z-b.min.z);o.scale.multiplyScalar(s);h.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(h);
+    o.position.x-=(b.min.x+b.max.x)/2;o.position.y+=topY-b.max.y;o.position.z+=rearZ-b.max.z;h.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(h);
+    o.traverse(m=>{if(m.isMesh){const n=m.material.clone();n.roughness=Math.max(0.42,n.roughness??0.6);n.metalness=Math.min(0.55,Math.max(0.25,n.metalness??0.3));n.envMapIntensity=0.9;m.material=n;}});
+    const g=new THREE.Group();g.add(h);armsFn(g);g.userData.muzzle=new THREE.Vector3(0,(topY+b.min.y)/2+0.02,b.min.z);g.userData.pos=pos;g.userData.gltf=true;return g;}
+  VM.rifle=vmGun('rifle',0.98,0.27,0.075,g=>stdArms(g,0.0,-0.34,-0.02),[0.15,-0.14,-0.47]);
+  VM.smg=vmGun('smg',0.5,0.2,0.06,g=>stdArms(g,0.0,-0.17,-0.02),[0.14,-0.13,-0.4]);
+  VM.sniper=vmGun('sniper',1.22,0.33,0.15,g=>stdArms(g,0.0,-0.3,-0.04),[0.15,-0.145,-0.48]);
+  {const pg=VM.pistol;const arms=pg.children.filter(c=>c.isGroup||c.geometry&&c.geometry.type==='CylinderGeometry');
+   VM.pistol=vmGun('pistol',0.22,0.04,0.045,g=>{for(const c of arms)g.add(c);},[0.09,-0.1,-0.36]);}
   for(const k in VM){VM[k].visible=false;vmRoot.add(VM[k]);}
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.2),flashMat);fl.visible=false;vmRoot.add(fl);VM.flash=fl;})();
 

@@ -58,9 +58,10 @@
 - 基于 [three.js](https://threejs.org/) r170，打包成**单个自包含的 `index.html`**（离线可玩，双击即可打开）。
 - PBR 材质（MeshStandardMaterial），程序化生成 1024×1024 的颜色 / 法线 / 粗糙度贴图：混凝土地面、石砖地面、灰泥墙、红砖墙、木箱、锈蚀集装箱等；世界坐标 UV，贴图不拉伸；三线性过滤 + 各向异性过滤。
 - 物理天空（Sky）+ PMREM 环境光照、ACES 电影色调映射、4096 软阴影、雾效、接触阴影（AO）。
-- 圆角几何体、墙顶压檐、踢脚线、门框、窗户、管道、壁灯、沙袋、油桶、远景建筑。
-- 角色由胶囊体 / 车削体等平滑几何组成，带头盔/护目镜、战术背心、护膝、背包，以及行走与持枪姿态（IK）。
-- 第一人称武器为多部件精细建模（挤出轮廓 + 倒角、金属度/粗糙度材质），配手套与袖子。
+- 圆角几何体、墙顶压檐、踢脚线、门框、窗户、管道、壁灯、远景建筑；木箱、油桶、沙袋墙、集装箱使用 CC0 glTF 模型（烘焙进静态批次，几乎不增加绘制调用）。
+- 角色为**带骨骼动画的 glTF 人物**（SWAT 特警）：待机 / 走 / 跑 / 后退 / 左右横移按速度方向自动混合，死亡动画；双臂两段 IK 握枪、枪身随瞄准俯仰；防守方深蓝、进攻方沙色迷彩区分阵营。
+- 第一人称步枪 / 冲锋枪 / 狙击枪 / 手枪使用 CC0 glTF 枪械模型，配程序化手套与袖子；战术匕首为程序化建模。
+- 全部模型以二进制形式**内嵌**在 index.html 中（约 2.4 MB），仍可离线双击运行；加载时显示进度条。
 - 粒子：烟雾、火花、血雾、柔边弹孔贴花；枪口火焰配合泛光（Bloom）。
 - 画质选项：**高清**（最高 2 倍像素比、4 倍 MSAA、泛光）/ **流畅**（1 倍像素比、关闭后期处理）。
 
@@ -81,15 +82,40 @@ npm run build      # 生成 index.html
 src/
   template.html        页面结构、HUD 与菜单样式
   build.js             构建脚本：拼接 parts → esbuild 打包 → 内联到 index.html
+  (../assets/models/   CC0 glTF 模型 .glb，构建时内嵌)
   parts/
     00-imports.js      three.js 及扩展模块引入
     10-core.js         地图、渲染器、天空/光照、程序化材质、场景搭建、碰撞与寻路
     20-audio-weapons.js WebAudio 程序化音效、武器参数、购买列表
-    25-models-fx.js    角色模型、第一人称武器、粒子特效
+    05-assets.js       内嵌 glTF 模型加载、加载进度、静态道具烘焙
+    25-models-fx.js    第一人称武器、粒子特效
+    26-characters.js   骨骼动画人物、动画混合、手臂 IK、第三人称枪械
     30-gameplay.js     玩家控制、AI 机器人、伤害、回合与经济系统
     40-hud-loop.js     HUD、输入、后期处理与主循环
 ```
 
+## 美术素材致谢
+
+所有 3D 模型均来自 [Poly Pizza](https://poly.pizza)，授权为 **CC0 1.0（公有领域）**：
+
+| 用途 | 模型 | 作者 | 链接 |
+|---|---|---|---|
+| 人物（骨骼动画） | SWAT | Quaternius | https://poly.pizza/m/Btfn3G5Xv4 |
+| 步枪 | Assault Rifle | Quaternius | https://poly.pizza/m/Bgvuu4CUMV |
+| 冲锋枪 | Submachine Gun | Quaternius | https://poly.pizza/m/7ehatxr7FY |
+| 狙击枪 | Sniper Rifle | Quaternius | https://poly.pizza/m/ASOMZIErq3 |
+| 手枪 | Pistol | Quaternius | https://poly.pizza/m/52kQzphmeF |
+| 匕首（备用） | Knife | Quaternius | https://poly.pizza/m/N9bfPFP1hr |
+| 手雷 | Frag Grenade West | Pichuliru | https://poly.pizza/m/1aIZys4mhg |
+| 木箱 | Crate | Quaternius | https://poly.pizza/m/oTD0P0yGLG |
+| 深色木箱 | Crate | Quaternius | https://poly.pizza/m/3VGWnZPXmG |
+| 油桶 | Barrel | Quaternius | https://poly.pizza/m/MraIiFnpAY |
+| 集装箱 | Shipping Container | Quaternius | https://poly.pizza/m/dQXRtm5GbO |
+| 集装箱（红） | Container Red | Quaternius | https://poly.pizza/m/vzzCNUB6Zn |
+| 集装箱（绿） | Container Green | Quaternius | https://poly.pizza/m/h5RUr3vlcS |
+| 沙袋墙 | Sack Trench | Quaternius | https://poly.pizza/m/LW3jwpPfiN |
+| 木托盘（备用） | Pallet | Quaternius | https://poly.pizza/m/cUAsYHDqfD |
+
 ## 许可证
 
-[MIT](LICENSE)
+代码：[MIT](LICENSE)；模型：CC0（见上表）。

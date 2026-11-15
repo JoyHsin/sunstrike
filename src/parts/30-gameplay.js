@@ -31,7 +31,7 @@ function damage(v,att,w,zone,dist){if(!v.alive||v._god)return;let dmg=w.dmg*Math
   else{const ai=v.ai;ai.alertT=now;if(!ai.targetVisible){ai.lastSeen=att.pos.clone();ai.lastSeenT=now;ai.lookAt=att.pos.clone();}}
   if(v.hp<=0){v.hp=0;kill(v,att,w,zone==='head');}}
 function kill(v,att,w,hs){v.alive=false;v.deaths++;v.deadT=0;v.vel.set(0,0,0);if(att){att.kills++;if(att.isPlayer){addMoney(w.reward);msg(`击杀 ${v.name}  +$${w.reward}`);}}
-  if(v.model){v.model.flash.visible=false;}
+  if(v.model){v.model.die();}
   if(v.isPlayer){scoped=false;player.deathT=0;specIdx=-1;}
   addKill(att,v,w,hs);}
 
@@ -62,7 +62,7 @@ function spawnAll(){const used=[[],[]];const free=SPAWN.map(s=>s.slice().sort(()
       else if(Math.random()<0.3){a.armor=100;}
       const ai=a.ai;Object.assign(ai,{path:null,pi:0,goalQ:[],wait:0,think:rand(0,0.2),target:null,targetVisible:false,react:0,errMag:0,phi:rand(0,TAU),lastSeen:null,lastSeenT:-99,alertT:-99,lookAt:null,
         aimY:a.yaw,aimP:0,burst:0,burstPause:0,strafe:1,strafeT:0,stuckT:0,lastPos:a.pos.clone(),headAim:false,jit:[0,0],scan:0});
-      a.model.root.visible=true;a.model.root.rotation.set(0,a.yaw,0);a.model.root.position.copy(a.pos);}}
+      a.model.reset();a.model.setWeapon(a.cur);a.model.root.visible=true;a.model.root.rotation.set(0,a.yaw,0);a.model.root.position.copy(a.pos);}}
   planRound();}
 function startMatch(d,m){diff=d||diff;if(m!==undefined)startMoney=m;round.score=[0,0];round.num=0;round.over=false;for(const a of agents){a.kills=0;a.deaths=0;a.alive=false;}player.money=startMoney;startRound();}
 function startRound(){round.num++;clearFX();spawnAll();round.state='freeze';round.t=FREEZE;round.liveT=0;round.winner=-1;scoped=false;buyOpen=false;
@@ -160,13 +160,13 @@ function botShoot(b){const ai=b.ai,D=DIFF[diff],w=WEAPONS[b.cur],am=b.ammo[b.cur
   am.mag--;b.fireCD=w.rate*(w.auto?1:rand(1.3,2.2));b.lastShot=now;
   const hs=Math.hypot(b.vel.x,b.vel.z);let sp=D.spread+(w.scope?0.001:w.spread)+(w.moveSpread||0)*clamp((hs-1.2)/5,0,1)*0.7+(w.auto?Math.min(ai.burst,8)*0.0015:0);
   const r=fireRay(b,ai.aimY,ai.aimP,sp,250);Snd.shot(w.snd,b.pos);b.model.flash.visible=true;b.flashT=0.05;
-  const m=_r.copy(b.model.muzzle);b.model.upper.localToWorld(m);fxTracer(m,r.end);if(Math.random()<0.4)fxSmoke(m,null,'muzzle',1);
+  const m=b.model.muzzleWorld(_r);fxTracer(m,r.end);if(Math.random()<0.4)fxSmoke(m,null,'muzzle',1);
   if(r.victim){damage(r.victim,b,w,r.zone,r.t);if(!r.victim.isPlayer&&r.t>1.5)fxParts(r.end,'blood',null,5);}else if(r.t<250){fxDecal(r.end,r.n);fxParts(r.end,'spark',r.n,2);}
   ai.burst++;if(w.auto&&ai.burst>=D.burst+((Math.random()*3)|0)){ai.burst=0;ai.burstPause=D.pause*rand(0.7,1.4);}
   ai.errMag=Math.max(D.minErr,ai.errMag*0.85);ai.phi+=rand(-1.5,1.5);}
 function turnTo(cur,target,rate,dt){const d=angDiff(cur,target);const m=rate*dt;return Math.abs(d)<=m?target:cur+Math.sign(d)*m;}
 function updateBot(b,dt){const ai=b.ai,D=DIFF[diff],m=b.model;
-  if(!b.alive){b.deadT+=dt;const k=Math.min(1,b.deadT*3.5);m.root.rotation.x=-k*Math.PI/2*0.98;m.root.position.set(b.pos.x,b.pos.y+0.12*k,b.pos.z);return;}
+  if(!b.alive){b.deadT+=dt;const k=Math.min(1,b.deadT*3.5);m.update(dt,{vx:0,vz:0,yaw:b.yaw,pitch:0,crouch:false});return;}
   const frozen=round.state==='freeze';const w=WEAPONS[b.cur];
   if(b.fireCD>0)b.fireCD-=dt;if(ai.burstPause>0)ai.burstPause-=dt;
   if(b.reloadT>0){b.reloadT-=dt;if(b.reloadT<=0)finishReload(b);}
@@ -197,8 +197,8 @@ function updateBot(b,dt){const ai=b.ai,D=DIFF[diff],m=b.model;
   moveAgent(b,dt);
   const hs=Math.hypot(b.vel.x,b.vel.z);b.stepDist+=hs*dt;if(hs>3.5){if(b.stepDist>2.4){b.stepDist=0;b.noisyT=now;Snd.step(b.pos,0.9);}}
   b.walkPhase=(b.walkPhase||0)+hs*dt*2.4;const sw=Math.sin(b.walkPhase)*Math.min(1,hs/3)*0.6;
-  m.hipL.rotation.x=sw;m.hipR.rotation.x=-sw;m.kneeL.rotation.x=-Math.max(0,-Math.cos(b.walkPhase))*Math.min(1,hs/3)*0.9;m.kneeR.rotation.x=-Math.max(0,Math.cos(b.walkPhase))*Math.min(1,hs/3)*0.9;m.root.position.copy(b.pos);m.root.rotation.set(0,ai.aimY,0);m.upper.rotation.x=0;m.head.rotation.x=ai.aimP*0.5;
-  m.upper.rotation.x=clamp(ai.aimP,-0.6,0.6)*0.5;b.yaw=ai.aimY;}
+  m.root.position.copy(b.pos);m.root.rotation.set(0,ai.aimY,0);if(m.cur!==b.cur)m.setWeapon(b.cur);m.update(dt,{vx:b.vel.x,vz:b.vel.z,yaw:ai.aimY,pitch:ai.aimP,crouch:!!b.crouching});
+  b.yaw=ai.aimY;}
 function separate(){const list=agents.filter(a=>a.alive);for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){const a=list[i],b=list[j];const dx=b.pos.x-a.pos.x,dz=b.pos.z-a.pos.z;const d=Math.hypot(dx,dz);
   if(d<0.62&&d>1e-4&&Math.abs(a.pos.y-b.pos.y)<1.5){const push=(0.62-d)*0.5,nx=dx/d,nz=dz/d;
     if(!a.isPlayer&&!collide(a.pos.x-nx*push,a.pos.y,a.pos.z-nz*push,a.height,a.radius)){a.pos.x-=nx*push;a.pos.z-=nz*push;}

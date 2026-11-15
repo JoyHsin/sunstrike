@@ -10,7 +10,7 @@ let _seed=1337;const srand=()=>{_seed=(_seed*16807)%2147483647;return (_seed-1)/
 const CELL=2.2, WALL_H=4.4, STEP=0.56, GRAV=20, JUMP_V=7.0;
 const MAP=[
 "####################################",
-"#AAAAAAAAA#.....KKKKKK.....#BBBBBBB#",
+"#AAAAAAAAA#CCC..KKKKKK.....#BBBBBBB#",
 "#AxAAAAAAA#.....KKKKKK.....#BBBBXBB#",
 "#AXAAAhhsA......KKKKKK......BBxBBBB#",
 "#AAAAAhhsA..................BBBBBBB#",
@@ -34,7 +34,7 @@ const MAP=[
 "##................................##",
 "#####.......TTTTTTTTTT.......#######",
 "#####.......TTTTTTTTTT.......#######",
-"#####.......TTTTTTTTTT.......#######",
+"#####CCC....TTTTTTTTTT...CCC.#######",
 "####################################"];
 const MH=MAP.length, MW=MAP[0].length;
 const cellX=c=>(c-MW/2+0.5)*CELL, cellZ=r=>(r-MH/2+0.5)*CELL;
@@ -109,15 +109,18 @@ const mix=(a,b,t)=>a+(b-a)*t;
 const T0=performance.now();
 // --- concrete floor (tile = 4 m)
 const SURF={};
+LOADER.set(0.35+0.05*1,'正在生成材质… concrete');await nextFrame();
 SURF.concrete=(()=>{const S=1024,N=256;const big=sampler(fbm(N,5,4,11),N),mid=sampler(fbm(N,4,16,23),N),stain=sampler(fbm(N,4,3,37,0.6),N);const cr=drawCracks(S,10,5);
   return makeSurface(S,(x,y,u,v,o)=>{const b=big(u,v),m=mid(u,v),s=stain(u,v),gr=Math.random();const jx=Math.min(x%512,512-x%512),jy=Math.min(y%512,512-y%512);const joint=Math.min(jx,jy)<3?1:0;
     let l=0.62+b*0.18+m*0.08+(gr-0.5)*0.06-(s>0.62?(s-0.62)*0.6:0)-joint*0.25-cr[y*S+x]*0.18;o.r=l*1.02;o.g=l*0.98;o.b=l*0.92;o.h=m*0.5+gr*0.12-joint*0.6-cr[y*S+x]*0.4;o.ro=clamp(0.82+b*0.12-(s>0.62?0.15:0),0,1);},3);})();
 // --- site tiles (8x8 tiles per 4 m)
+LOADER.set(0.35+0.05*2,'正在生成材质… tiles');await nextFrame();
 SURF.tiles=(()=>{const S=1024,N=256,T=128;const n=sampler(fbm(N,5,8,51),N),wear=sampler(fbm(N,4,4,63),N);_seed=77;const tint=[];for(let i=0;i<64;i++)tint.push(srand());
   return makeSurface(S,(x,y,u,v,o)=>{const tx=x%T,ty=y%T,id=((y/T)|0)*8+((x/T)|0);const e=Math.min(tx,ty,T-1-tx,T-1-ty);const grout=e<4;const bev=clamp((e-4)/10,0,1);const t=tint[id],nn=n(u,v),w=wear(u,v),gr=Math.random();
     if(grout){const l=0.42+nn*0.1;o.r=l;o.g=l*0.97;o.b=l*0.9;o.h=0;o.ro=0.95;}
     else{const l=0.55+t*0.2+nn*0.12+(gr-0.5)*0.04-(w>0.6?(w-0.6)*0.5:0);o.r=l*1.12;o.g=l*0.86;o.b=l*0.64;o.h=0.6*bev+nn*0.12+gr*0.04;o.ro=0.5+nn*0.25+(w>0.6?0.2:0);}},3);})();
 // --- plaster wall (one tile = 4.4 m incl. full height, bottom grime)
+LOADER.set(0.35+0.05*3,'正在生成材质… plaster');await nextFrame();
 SURF.plaster=(()=>{const S=1024,N=256;const big=sampler(fbm(N,5,4,91),N),mid=sampler(fbm(N,5,24,93),N),patch=sampler(fbm(N,4,5,97,0.55),N);const cr=drawCracks(S,7,13);_seed=19;const streak=[];for(let i=0;i<S;i++)streak.push(srand());
   return makeSurface(S,(x,y,u,v,o)=>{const b=big(u,v),m=mid(u,v),p=patch(u,v),gr=Math.random();const vy=1-v;// vy: 0 bottom..1 top
     const exposed=p>0.75;// patches of brick under plaster
@@ -127,12 +130,14 @@ SURF.plaster=(()=>{const S=1024,N=256;const big=sampler(fbm(N,5,4,91),N),mid=sam
     const grime=clamp(1-vy/0.16,0,1)*0.35+clamp(1-vy/0.04,0,1)*0.2;const st=streak[x]>0.93?clamp((vy-0.55)*1.4,0,1)*0.12*(0.5+b):0;
     const dk=1-grime-st-cr[y*S+x]*0.2;o.r*=dk;o.g*=dk;o.b*=dk;o.h=h-cr[y*S+x]*0.3;o.ro=ro;},2.5);})();
 // --- brick wall
+LOADER.set(0.35+0.05*4,'正在生成材质… brick');await nextFrame();
 SURF.brick=(()=>{const S=1024,N=256,BH=20,BW=58;const n=sampler(fbm(N,5,12,131),N),big=sampler(fbm(N,4,3,137),N);_seed=31;const bt=[];for(let i=0;i<4096;i++)bt.push(srand());
   return makeSurface(S,(x,y,u,v,o)=>{const row=Math.floor(y/BH),off=(row%2)*BW/2,col=Math.floor((x+off)/BW);const lx=(x+off)%BW,ly=y%BH;const e=Math.min(lx,ly,BW-1-lx,BH-1-ly);const mort=e<2.5;const id=(row*41+col*7)%4096;const t=bt[id],nn=n(u,v),gr=Math.random();const vy=1-v;
     if(mort){const l=0.55+nn*0.1;o.r=l;o.g=l*0.95;o.b=l*0.88;o.h=0.05;o.ro=0.95;}
     else{const l=0.42+t*0.18+nn*0.12+(gr-0.5)*0.05;o.r=l*1.35;o.g=l*(0.62+t*0.12);o.b=l*0.48;o.h=0.45+clamp((e-2.5)/4,0,1)*0.3+nn*0.25;o.ro=0.8+nn*0.15;}
     const grime=clamp(1-vy/0.15,0,1)*0.35+big(u,v)*0.12;o.r*=1-grime;o.g*=1-grime;o.b*=1-grime;},3);})();
 // --- wooden crate panel (mapped once per face)
+LOADER.set(0.35+0.05*5,'正在生成材质… crate');await nextFrame();
 SURF.crate=(()=>{const S=512,N=128;const grain=sampler(fbm(N,4,6,171),N),n=sampler(fbm(N,4,8,173),N);
   return makeSurface(S,(x,y,u,v,o)=>{const fr=0.11;const inFrame=u<fr||u>1-fr||v<fr||v>1-fr;const d1=Math.abs(u-v),d2=Math.abs(u-(1-v));const brace=!inFrame&&(Math.min(d1,d2)<0.075);
     const plank=Math.floor(v*6),pv=(v*6)%1;const gap=!inFrame&&!brace&&(pv<0.025);const gu=brace?(d1<d2?(u+v):(u-v)):(inFrame&&(u<fr||u>1-fr)?v:u);
@@ -148,6 +153,7 @@ const metalSurf=(paint,seed)=>{const S=512,N=128;const rust=sampler(fbm(N,5,6,se
     if(rusty){const t=clamp((r-0.45)*3,0,1);o.r=0.42+t*0.12;o.g=0.25+t*0.04;o.b=0.15;o.ro=0.92;h+=nn*0.1;}else{const f=l*(0.9+nn*0.2);o.r=paint[0]*f;o.g=paint[1]*f;o.b=paint[2]*f;o.ro=0.42+nn*0.15;}
     if(frame){o.r*=0.85;o.g*=0.85;o.b*=0.85;}o.h=h;},3);};
 console.log&&void 0;
+LOADER.set(0.35+0.05*6,'正在生成材质… contBlue');await nextFrame();
 SURF.contBlue=metalSurf([0.3,0.5,0.66],191);SURF.contRed=metalSurf([0.66,0.3,0.22],291);SURF.contGreen=metalSurf([0.4,0.52,0.34],391);
 const TEXGEN_MS=performance.now()-T0;
 
@@ -184,7 +190,7 @@ function worldUV(g,sx,sy,sz,ox,oy,oz){ox=ox||0;oy=oy||0;oz=oz||0;const p=g.attri
     if(ay>=ax&&ay>=az){u=x/sx;v=-z/sz;}else if(ax>=az){u=(n.getX(i)>0?-z:z)/sz;v=y/sy;}else{u=(n.getZ(i)>0?x:-x)/sx;v=y/sy;}uv[i*2]=u;uv[i*2+1]=v;}
   g.setAttribute('uv',new THREE.BufferAttribute(uv,2));return g;}
 const BATCH=new Map();// material -> [geometries]
-function batch(mat,g,shadow){if(g.index)g=g.toNonIndexed();for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);
+function batch(mat,g,shadow){if(g.index)g=g.toNonIndexed();for(const k of Object.keys(g.attributes))if(!['position','normal','uv'].includes(k))g.deleteAttribute(k);if(!g.attributes.normal)g.computeVertexNormals();if(!g.attributes.uv)g.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*2),2));
   const key=mat.uuid+(shadow===false?'n':'s');if(!BATCH.has(key))BATCH.set(key,{mat,list:[],shadow:shadow!==false});BATCH.get(key).list.push(g);}
 function flushBatches(){for(const {mat,list,shadow} of BATCH.values()){const g=mergeGeometries(list,false);const m=new THREE.Mesh(g,mat);m.castShadow=shadow;m.receiveShadow=true;m.matrixAutoUpdate=false;scene.add(m);}BATCH.clear();}
 function rbox(x0,y0,z0,x1,y1,z1,r,seg){const w=x1-x0,h=y1-y0,d=z1-z0;r=Math.min(r,w/2-0.001,h/2-0.001,d/2-0.001);const g=r>0.004?new RoundedBoxGeometry(w,h,d,seg||2,r):new THREE.BoxGeometry(w,h,d);g.translate((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);return g;}
@@ -235,21 +241,21 @@ for(const w of wallRuns){if(w.c1-w.c0<4)continue;for(const dz of [1,-1]){let ok=
 // props
 const AO=[];// footprints for contact-shadow strips
 for(let r=0;r<MH;r++)for(let c=0;c<MW;c++){const k=MAP[r][c],x=cellX(c),z=cellZ(r);
-  if(k==='x'){const s=0.95;colBox(x-s,0,z-s,x+s,1.1,z+s);const g=rbox(x-s,0,z-s,x+s,1.1,z+s,0.04,2);worldUV(g,2*s,1.1,2*s,x-s,0,z-s);batch(M.crate,g);AO.push([x-s,z-s,x+s,z+s]);
-    if(srand()<0.6){const t=0.45;const ox=x+rand(-0.3,0.3),oz=z+rand(-0.3,0.3);colBox(ox-t,1.1,oz-t,ox+t,1.7,oz+t);const g2=rbox(ox-t,1.1,oz-t,ox+t,1.7,oz+t,0.03,2);worldUV(g2,2*t,0.6,2*t,ox-t,1.1,oz-t);batch(M.crate,g2);}}
+  if(k==='x'){for(const dx of [-0.55,0.55]){colBox(x+dx-0.55,0,z-0.55,x+dx+0.55,1.1,z+0.55);bakeProp('crate',x+dx,0,z,(srand()-0.5)*0.0,{sx:1.1,sy:1.1,sz:1.1});}AO.push([x-1.1,z-0.55,x+1.1,z+0.55]);
+    if(srand()<0.6){const ox=x+(srand()<0.5?-0.55:0.55),oz=z+rand(-0.1,0.1);colBox(ox-0.33,1.1,oz-0.33,ox+0.33,1.76,oz+0.33);bakeProp('crateDark',ox,1.1,oz,0,{sx:0.66,sy:0.66,sz:0.66});}}
   else if(k==='X'){const mat=[M.contBlue,M.contRed,M.contGreen][(c+r)%3];colBox(x-1.0,0,z-1.0,x+1.0,2.3,z+1.0);const g=rbox(x-1.0,0,z-1.0,x+1.0,2.3,z+1.0,0.06,3);worldUV(g,2,2.3,2,x-1,0,z-1);batch(mat,g);AO.push([x-1,z-1,x+1,z+1]);
     const bar=cyl(0.02,0.02,2.0,8,x+1.03,1.15,z-0.6,'z');}
-  else if(k==='w'){colBox(x-CELL/2,0,z-0.3,x+CELL/2,1.15,z+0.3);AO.push([x-CELL/2,z-0.3,x+CELL/2,z+0.3]);
-    // sandbag wall: rows of rounded bags
-    for(let row=0;row<4;row++){const n=4,off=(row%2)*0.27;for(let i=0;i<n+(row%2?0:1)-1+1;i++){const bx=x-CELL/2+0.28+i*0.55+off-0.14;if(bx>x+CELL/2-0.2)continue;
-      const g=new THREE.CapsuleGeometry(0.14,0.3,4,10);g.rotateZ(Math.PI/2);g.scale(1,0.85,1.9);g.translate(bx,0.14+row*0.27,z+rand(-0.02,0.02));worldUV(g,1,1,1);batch(M.sandbag,g);}}}
+  else if(k==='w'){colBox(x-CELL/2,0,z-0.32,x+CELL/2,1.15,z+0.32);AO.push([x-CELL/2,z-0.32,x+CELL/2,z+0.32]);bakeProp('sandbags',x,0,z,0,{sx:CELL+0.1,sy:1.15,sz:0.75});}
   else if(k==='h'||k==='s'){const hh=k==='h'?1.0:0.5;colBox(x-CELL/2,0,z-CELL/2,x+CELL/2,hh,z+CELL/2);const g=rbox(x-CELL/2,0,z-CELL/2,x+CELL/2,hh,z+CELL/2,0.03,1);worldUV(g,4,4,4);batch(M.plat,g);
     const e=rbox(x-CELL/2-0.01,hh-0.05,z-CELL/2-0.01,x+CELL/2+0.01,hh,z+CELL/2+0.01,0.01,1);worldUV(e,1,1,1);batch(k==='s'?M.steel:M.cap,e);}}
+// shipping containers (runs of 'C')
+for(let r=0;r<MH;r++){let c=0;while(c<MW){if(MAP[r][c]==='C'){let c2=c;while(MAP[r][c2+1]==='C')c2++;const x0=cellX(c)-CELL/2,x1=cellX(c2)+CELL/2,z=cellZ(r);const L=x1-x0-0.2;
+  colBox(x0+0.1,0,z-1.05,x1-0.1,2.6,z+1.05);bakeProp(['contRed','contGreen','contRed2'][(r+c)%3],(x0+x1)/2,0,z,0,{sx:L,sy:2.6,sz:2.1});AO.push([x0+0.1,z-1.05,x1-0.1,z+1.05]);c=c2+1;}else c++;}}
 // barrels
 {const prof=[];for(let i=0;i<=20;i++){const y=i/20;const rib=(Math.abs(y-0.33)<0.02||Math.abs(y-0.66)<0.02)?0.012:0;prof.push(new THREE.Vector2(0.33+rib-(y<0.02||y>0.98?0.015:0),y*1.0));}
  prof.unshift(new THREE.Vector2(0,0));prof.push(new THREE.Vector2(0,1.0));
  const mats=[STD({color:0x8e3b2a,metalness:0.5,roughness:0.5}),STD({color:0x2f5b7c,metalness:0.5,roughness:0.5}),STD({color:0x5f6b3a,metalness:0.5,roughness:0.55})];
- [[12,24],[27,24],[13,1],[26,4],[20,22],[5,22],[23,21],[9,10],[33,14]].forEach(([c,r],i)=>{if(!walkable(c,r))return;const x=cellX(c)+0.45,z=cellZ(r)+0.45;const g=new THREE.LatheGeometry(prof,20);g.translate(x,0,z);worldUV(g,1,1,1);batch(mats[i%3],g);colBox(x-0.33,0,z-0.33,x+0.33,1.0,z+0.33);AO.push([x-0.33,z-0.33,x+0.33,z+0.33]);});}
+ [[12,24],[27,24],[13,1],[26,4],[20,22],[5,22],[23,21],[9,10],[33,14]].forEach(([c,r],i)=>{if(!walkable(c,r))return;const x=cellX(c)+0.45,z=cellZ(r)+0.45;bakeProp('barrel',x,0,z,srand()*TAU,{sx:0.66,sy:1.0,sz:0.66,tint:[null,0xb04a34,0x6d7d42][i%3]});colBox(x-0.33,0,z-0.33,x+0.33,1.0,z+0.33);AO.push([x-0.33,z-0.33,x+0.33,z+0.33]);});}
 // distant skyline outside the walls
 {_seed=99;const ext=[MW*CELL/2,MH*CELL/2];for(let i=0;i<46;i++){const side=i%4;const t=srand();let x,z;const d=rand(5,26);
   if(side===0){x=mix(-ext[0]-20,ext[0]+20,t);z=-ext[1]-d;}else if(side===1){x=mix(-ext[0]-20,ext[0]+20,t);z=ext[1]+d;}else if(side===2){x=-ext[0]-d;z=mix(-ext[1],ext[1],t);}else{x=ext[0]+d;z=mix(-ext[1],ext[1],t);}
